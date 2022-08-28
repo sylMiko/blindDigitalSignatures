@@ -1,0 +1,131 @@
+
+	
+from __future__ import print_function
+
+from sympy import mod_inverse
+import random
+import math
+
+
+#W wiekszosci funkcji obliczenia sa podzielone na kilka linijek
+wiad = 8 #wartosc wiadomosc
+p = 23 #liczba pierwsza
+q =11 #liczba pierwsza itp
+F = GF(p) #tworzenie ciala
+g1 = F.primitive_element()
+g = g1^2
+#g = g.multiplicative_order()
+#while(g.multiplicative_order()!=q):
+    #g = F.random_element()
+x = 5 #wartosc klucza prywatnego
+y = pow(int(g), int(x), int(p)) #klucz publiczny
+
+#Strona B
+#krok 1,2
+#WEJSCIE -> p, q, g
+#wyjscie -> wartosc R -> przesysla do strony A, wartosc k -> zwraca, ale nie przesyla do A
+def generacja_strona_B(p, q, g):
+    while(1): #petla nieskonczona, jezeli znajdzie liczbe R, taka ze nwd(r,q)==1 to przerywa petle
+        k = random.randint(1, 200)
+        print("k", k)
+        R = pow(int(g), int(k), int(p))
+        if(math.gcd(int(R), int(q)) == 1):
+            break
+    return R, k
+
+
+#STRONA A
+#krok 3, 4,5
+#WEJSCIE -> p, q, g, R, wiadomosc
+#WYJSCIE -> 0 -> jesli NWD(R,q)!=1, m' -> wysylane do B, R1 oraz b -> zwraca ale nie rpzesyla
+def generacja_strona_A(p, q, g, R, wiad):
+    if(math.gcd(int(R),int(q))!= 1):
+        System.out.print("krok 3 zly")
+        return 0
+    else:
+        while(1): #petla nieskonczona jw
+            a = random.randint(1, int(q-1))
+            b = random.randint(1, int(q-1))
+            R11 = pow(int(R), int(a), int(p))
+            R1b = pow(int(g), int(b), int(p))
+            R1 = mod(int(R11)*int(R1b), int(p))
+            print(R1)
+            if(math.gcd(int(R1), int(q)) == 1):
+                break
+        m11 = int(a)*int(wiad)*int(R)
+        m1 = mod(int(m11), int(q))
+        m2 = pow(int(R1), -1, int(q))
+        m3 = int(m1)*int(m2)
+        m = mod(int(m3), int(q))
+        return m, R1, b
+    return 0 #/\/\Mialem pewien problem z obliczeniami, wiec podzielilem je na kilka skladowych
+
+
+
+#STRONA B
+#krok 6
+#wejscie -> R, x, k, m', q
+#wyjscie -> s' wysykane do strony A
+def generacja_6_b(R, x, k, mprim, q):
+    sprim1 = int(R)*int(x)
+    sprim2 = mod((int(k)*int(mprim)), q)
+    sprim = int(sprim2) + int(sprim1)
+    return sprim
+
+#STRONA A
+#KROK 7
+#wejscie -> s', R1, R, b, wiad, q
+#Wyjscie -> s, r -> podpis to para tych liczb
+def generacja_7_a(sprim, R1, R, b, m, q):
+    s = int(sprim)*int(R1)*int(mod_inverse(int(R), int(q))) + mod((int(b)*int(m)), int(q))
+    r = mod(int(R1), int(q))
+    return s, r
+
+#weryfikacja czesc1
+#wejscie -> g, s, y, r, m, p
+#wyjscie -? T1
+def weryfikacja(g, s, y, r, m, p):
+    T1 = pow(((int(g)^int(s))*(int(y)^int(-r)))^int(m), -1, int(p))
+    return T1
+
+#weryfikacja czesc2
+#wejscie -> T1, q
+#wyjscie T2
+def weryfikacja2(T, q):
+    T2 = mod(int(T), int(q))
+    return T2
+
+
+#weryfikacja poprawiona
+#wejscie -> g, s, y, r, wiad, p, q
+#wyjscie -> print wartosc T, wartosc mod(T, q), wartosc r, popr
+
+
+def weryfikacja_poprawiona(g, s, y, r, wiad, p ,q):
+    g1 = power_mod(g, int(s), p) #g^s mod p
+    y1 = power_mod(y, int(r), p) #y^r mod p
+    y1 = inverse_mod(int(y1), p) #/\^-1mod p
+    g2 = mod(g1*int(y1), p) #g1 * y1 mod p
+    wiad2 = int(wiad) #zmiana na int
+    wiad2 = inverse_mod(wiad2, q) #odwrotnosc modulo wiad2^-1 mod q
+    T = power_mod(g2, wiad2, p) #T = g2^wiad2 mod p
+    print("T", T)
+    print("modtq", mod(T, q))
+    print("wartosc r", r)
+    if(mod(T, q)==r):
+        print("POPRAWNY")
+    else:
+        print("niepoprawny")
+
+zm, k = generacja_strona_B(int(p), int(q), int(g))
+print("Wartosc: R , k ", zm, k)
+mprim, R1, b = generacja_strona_A(int(p), int(q), int(g), int(zm), int(wiad))
+print("Wartosc: m' , R1 , b", mprim, R1, b)
+
+sprim = (generacja_6_b(int(zm), int(x), int(k), int(mprim), int(q)))
+print("Wartosc s'", sprim)
+s, r = generacja_7_a(int(sprim), int(R1), int(zm), int(b), int(wiad), int(q))
+print("Wartosc s , r",s, r)
+
+weryfikacja_poprawiona(g, s, y, r, wiad, p, q)
+
